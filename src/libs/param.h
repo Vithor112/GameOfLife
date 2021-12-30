@@ -9,4 +9,7 @@
     #include <unistd.h>
     #include <stdlib.h>
     #include <ctype.h>
+
+    #define ALIVE 1
+    #define DEAD 2
 #endif

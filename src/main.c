@@ -1,14 +1,15 @@
 #include "libs/param.h"
 
-void printMouse(MEVENT event, int n, int (*matrix)[n]){
+void printMouse(MEVENT event, int n, int (*matrix)[n], int color){
+    attrset(COLOR_PAIR(color));
     int x = event.x;
     if (x % 2)
         --x;
     move(event.y, x);
-    if (inch()  != 288){
+    if (inch()  != 288 || color == DEAD){
         printw("  ");
         x /= 2;
-        matrix[event.y][x]++;
+        matrix[event.y][x] = color == ALIVE ? 1 : 0;
     }
 }
 
@@ -27,6 +28,7 @@ int findNeighbors(int n, int (*matrix)[n], int row, int col){
 
 void drawBoard(int n, int (*matrix)[n], int rows){
     erase();
+    attrset(COLOR_PAIR(ALIVE));
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < n; j++){
             if (matrix[i][j]){
@@ -48,8 +50,9 @@ void initializeNCurses(){
     halfdelay(0);
     start_color();
     curs_set(0);
-    init_pair(1, COLOR_BLUE, COLOR_WHITE);;
-    mousemask(BUTTON1_CLICKED, NULL);
+    init_pair(ALIVE, COLOR_BLUE, COLOR_WHITE);
+    init_pair(DEAD, COLOR_BLUE, COLOR_BLACK);
+    mousemask(BUTTON1_CLICKED | BUTTON3_CLICKED, NULL);
 }
 
 int main(void){
@@ -60,27 +63,20 @@ int main(void){
     int matrix[max_y][max_x];
     int matrixTemp[max_y][max_x];
     memset(matrix, 0, sizeof(matrix));
-    attrset(COLOR_PAIR(1));
     int char_input;
     MEVENT event;
     while(true){
         char_input = getch();
         if(char_input == KEY_MOUSE)
             if(getmouse(&event) == OK)
-                printMouse(event, max_x, matrix);
-        if (char_input == 'r'){
+                if (event.bstate & BUTTON1_CLICKED)
+                    printMouse(event, max_x, matrix, ALIVE);
+                if (event.bstate & BUTTON3_CLICKED)
+                    printMouse(event, max_x, matrix, DEAD);
+        if (char_input == 114 || char_input == 82){
             memcpy(matrixTemp,matrix, sizeof(matrix));
             #ifdef DEBUG
-                FILE *arqqq = fopen("matrixA.txt", "w");
-                for (int i  = 0; i < max_y;  i++){
-                    for (int j = 0; j < max_x; j++)
-                        fprintf(arqqq,"%d ", matrix[i][j]);
-                    fprintf(arqqq,"\n");
-                }
-                fclose(arqqq);
-            #endif 
-            #ifdef DEBUG
-                FILE *arq =  fopen("matrixTemp.txt", "w");
+                FILE *arq =  fopen("matrixBeforeChange.txt", "w");
                 for (int i  = 0; i < max_y;  i++){
                     for (int j = 0; j < max_x; j++)
                         fprintf(arq,"%d ", matrixTemp[i][j]);
@@ -99,7 +95,7 @@ int main(void){
                 }
             memcpy(matrix, matrixTemp, sizeof(matrixTemp));
             #ifdef DEBUG
-                FILE *arqq = fopen("matrix.txt", "w");
+                FILE *arqq = fopen("matrixAfterChange.txt", "w");
                 for (int i  = 0; i < max_y;  i++){
                     for (int j = 0; j < max_x; j++)
                         fprintf(arqq,"%d ", matrix[i][j]);
